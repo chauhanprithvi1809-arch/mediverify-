@@ -1,0 +1,1720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MediVerify — Medicine Authentication System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #0a0f1e;
+    --navy-mid: #111827;
+    --navy-soft: #1a2235;
+    --navy-border: #1f2d45;
+    --teal: #00d4aa;
+    --teal-dim: #00a882;
+    --teal-glow: rgba(0,212,170,0.15);
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --red-dim: rgba(239,68,68,0.15);
+    --green: #10b981;
+    --green-dim: rgba(16,185,129,0.12);
+    --text-1: #f0f4f8;
+    --text-2: #94a3b8;
+    --text-3: #4a5568;
+    --mono: 'DM Mono', monospace;
+    --display: 'DM Serif Display', serif;
+    --sans: 'Syne', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--navy);
+    color: var(--text-1);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE TEXTURE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── GRID BG ── */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,170,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,170,0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 28px 0 48px;
+    border-bottom: 1px solid var(--navy-border);
+    margin-bottom: 48px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .logo-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--teal-glow), transparent);
+    border: 1px solid var(--teal-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logo-icon svg { width: 22px; height: 22px; }
+
+  .logo-text h1 {
+    font-family: var(--sans);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-1);
+    letter-spacing: -0.5px;
+  }
+
+  .logo-text p {
+    font-size: 11px;
+    color: var(--text-2);
+    font-family: var(--mono);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .header-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--teal);
+    font-family: var(--mono);
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--teal);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  /* ── MAIN GRID ── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+
+  @media (max-width: 860px) {
+    .main-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ── PANEL CARD ── */
+  .panel {
+    background: var(--navy-soft);
+    border: 1px solid var(--navy-border);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--navy-border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .panel-header-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--teal-glow);
+    border: 1px solid rgba(0,212,170,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .panel-header-icon svg { width: 16px; height: 16px; color: var(--teal); }
+
+  .panel-header h2 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-1);
+    letter-spacing: -0.2px;
+  }
+
+  .panel-header p {
+    font-size: 11px;
+    color: var(--text-2);
+    font-family: var(--mono);
+    margin-top: 1px;
+  }
+
+  .panel-body { padding: 24px; }
+
+  /* ── GPS BAR ── */
+  .gps-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-family: var(--mono);
+    margin-bottom: 20px;
+    border: 1px solid;
+    transition: all 0.3s;
+  }
+
+  .gps-bar.active { background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.25); color: var(--green); }
+  .gps-bar.loading { background: rgba(148,163,184,0.08); border-color: rgba(148,163,184,0.2); color: var(--text-2); }
+  .gps-bar.error { background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.25); color: var(--amber); }
+
+  .gps-bar svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+  .gps-retry {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: inherit;
+    font-family: var(--mono);
+    font-size: 11px;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+  }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 20px;
+    border: 1px solid var(--navy-border);
+  }
+
+  .tab-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 10px;
+    border-radius: 9px;
+    border: none;
+    background: transparent;
+    color: var(--text-2);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .tab-btn.active {
+    background: var(--navy-mid);
+    color: var(--text-1);
+    border: 1px solid var(--navy-border);
+  }
+
+  .tab-btn svg { width: 15px; height: 15px; }
+
+  /* ── INPUT FIELD ── */
+  .input-wrap {
+    position: relative;
+    margin-bottom: 12px;
+  }
+
+  .input-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-3);
+  }
+
+  .input-icon svg { width: 16px; height: 16px; }
+
+  .field {
+    width: 100%;
+    height: 52px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--navy-border);
+    border-radius: 12px;
+    color: var(--text-1);
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 0 16px 0 42px;
+    outline: none;
+    transition: all 0.2s;
+  }
+
+  .field::placeholder { color: var(--text-3); }
+  .field:focus { border-color: var(--teal-dim); background: rgba(0,212,170,0.04); }
+
+  /* ── VERIFY BTN ── */
+  .verify-btn {
+    width: 100%;
+    height: 52px;
+    background: linear-gradient(135deg, var(--teal), var(--teal-dim));
+    border: none;
+    border-radius: 12px;
+    color: var(--navy);
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s;
+    margin-top: 4px;
+    letter-spacing: -0.3px;
+  }
+
+  .verify-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,212,170,0.25); }
+  .verify-btn:active { transform: translateY(0); }
+  .verify-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+  .verify-btn svg { width: 18px; height: 18px; }
+
+  /* ── SAMPLE PILLS ── */
+  .samples-label {
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: center;
+    margin: 20px 0 10px;
+  }
+
+  .samples {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .sample-pill {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--navy-border);
+    background: transparent;
+    color: var(--text-2);
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .sample-pill:hover { border-color: var(--teal-dim); color: var(--teal); background: var(--teal-glow); }
+
+  /* ── QR AREA ── */
+  .qr-area {
+    background: #000;
+    border-radius: 14px;
+    aspect-ratio: 1;
+    max-height: 260px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--navy-border);
+    margin-bottom: 12px;
+  }
+
+  #qr-reader { width: 100%; height: 100%; }
+
+  .qr-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-3);
+  }
+
+  .qr-placeholder svg { width: 48px; height: 48px; opacity: 0.4; }
+  .qr-placeholder p { font-size: 13px; }
+
+  .qr-btn {
+    width: 100%;
+    height: 48px;
+    border-radius: 12px;
+    border: 1px solid var(--navy-border);
+    background: rgba(255,255,255,0.04);
+    color: var(--text-1);
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s;
+    margin-bottom: 10px;
+  }
+
+  .qr-btn:hover { border-color: var(--teal-dim); background: var(--teal-glow); color: var(--teal); }
+  .qr-btn svg { width: 16px; height: 16px; }
+
+  /* ── RESULT PANEL ── */
+  .result-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 24px;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .empty-state svg { width: 48px; height: 48px; color: var(--text-3); opacity: 0.4; }
+  .empty-state h3 { font-size: 16px; color: var(--text-2); font-weight: 500; }
+  .empty-state p { font-size: 13px; color: var(--text-3); line-height: 1.6; max-width: 280px; }
+
+  /* ── RISK HEADER CARD ── */
+  .risk-header {
+    padding: 24px;
+    border-radius: 16px;
+    border: 1px solid;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .risk-header.LOW { background: rgba(16,185,129,0.06); border-color: rgba(16,185,129,0.2); }
+  .risk-header.MEDIUM { background: rgba(245,158,11,0.06); border-color: rgba(245,158,11,0.2); }
+  .risk-header.HIGH { background: rgba(239,68,68,0.06); border-color: rgba(239,68,68,0.25); }
+  .risk-header.NOT_FOUND { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.3); }
+
+  .risk-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .risk-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-family: var(--mono);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 1px solid;
+  }
+
+  .risk-label.LOW { background: rgba(16,185,129,0.15); color: #10b981; border-color: rgba(16,185,129,0.3); }
+  .risk-label.MEDIUM { background: rgba(245,158,11,0.15); color: #f59e0b; border-color: rgba(245,158,11,0.3); }
+  .risk-label.HIGH { background: rgba(239,68,68,0.15); color: #ef4444; border-color: rgba(239,68,68,0.3); }
+  .risk-label.NOT_FOUND { background: rgba(239,68,68,0.15); color: #ef4444; border-color: rgba(239,68,68,0.3); }
+  .risk-label svg { width: 12px; height: 12px; }
+
+  .risk-score-ring {
+    width: 72px;
+    height: 72px;
+    flex-shrink: 0;
+  }
+
+  .risk-name {
+    font-family: var(--display);
+    font-size: 26px;
+    color: var(--text-1);
+    line-height: 1.1;
+    margin-bottom: 4px;
+  }
+
+  .risk-serial {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-2);
+  }
+
+  /* ── RISK METER BAR ── */
+  .risk-meter {
+    margin-top: 16px;
+  }
+
+  .risk-meter-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--text-3);
+    margin-bottom: 6px;
+  }
+
+  .risk-bar-bg {
+    height: 6px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .risk-bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.8s cubic-bezier(0.16,1,0.3,1);
+  }
+
+  .risk-bar-fill.LOW { background: linear-gradient(90deg, #10b981, #34d399); }
+  .risk-bar-fill.MEDIUM { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+  .risk-bar-fill.HIGH { background: linear-gradient(90deg, #ef4444, #f87171); }
+  .risk-bar-fill.NOT_FOUND { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+  /* ── DETAIL GRID ── */
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .detail-item {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--navy-border);
+    border-radius: 12px;
+    padding: 14px;
+  }
+
+  .detail-item.highlight { border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.05); }
+
+  .detail-label {
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .detail-label svg { width: 11px; height: 11px; }
+
+  .detail-value {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-1);
+  }
+
+  .detail-item.highlight .detail-value { color: var(--amber); }
+
+  /* ── RISK FACTORS ── */
+  .risk-factors {
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid;
+  }
+
+  .risk-factors.LOW { background: rgba(16,185,129,0.05); border-color: rgba(16,185,129,0.15); }
+  .risk-factors.MEDIUM { background: rgba(245,158,11,0.05); border-color: rgba(245,158,11,0.15); }
+  .risk-factors.HIGH { background: rgba(239,68,68,0.05); border-color: rgba(239,68,68,0.2); }
+  .risk-factors.NOT_FOUND { background: rgba(239,68,68,0.05); border-color: rgba(239,68,68,0.2); }
+
+  .risk-factors-title {
+    font-size: 11px;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .risk-factors-title svg { width: 13px; height: 13px; }
+  .risk-factors.LOW .risk-factors-title { color: #10b981; }
+  .risk-factors.MEDIUM .risk-factors-title { color: #f59e0b; }
+  .risk-factors.HIGH .risk-factors-title,
+  .risk-factors.NOT_FOUND .risk-factors-title { color: #ef4444; }
+
+  .factor-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 7px;
+    color: var(--text-2);
+  }
+
+  .factor-item:last-child { margin-bottom: 0; }
+
+  .factor-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 6px;
+  }
+
+  .LOW .factor-dot { background: #10b981; }
+  .MEDIUM .factor-dot { background: #f59e0b; }
+  .HIGH .factor-dot, .NOT_FOUND .factor-dot { background: #ef4444; }
+
+  /* ── GPS SCAN META ── */
+  .scan-meta {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .meta-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--navy-border);
+    border-radius: 10px;
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--text-2);
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .meta-chip svg { width: 13px; height: 13px; color: var(--teal); flex-shrink: 0; }
+
+  .meta-chip-inner { display: flex; flex-direction: column; gap: 1px; }
+  .meta-chip-label { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px; }
+  .meta-chip-value { font-size: 12px; color: var(--text-1); }
+
+  /* ── REPORT CARD ── */
+  .report-card {
+    border: 1px solid rgba(0,212,170,0.25);
+    background: rgba(0,212,170,0.05);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .report-top-bar {
+    height: 3px;
+    background: linear-gradient(90deg, var(--teal), #00a882);
+  }
+
+  .report-body {
+    padding: 18px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  .report-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(0,212,170,0.12);
+    border: 1px solid rgba(0,212,170,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .report-icon svg { width: 18px; height: 18px; color: var(--teal); }
+
+  .report-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--teal);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .sent-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    background: rgba(0,212,170,0.15);
+    border: 1px solid rgba(0,212,170,0.3);
+    border-radius: 10px;
+    font-size: 10px;
+    color: var(--teal);
+    font-family: var(--mono);
+  }
+
+  .report-desc { font-size: 12px; color: var(--text-2); margin-bottom: 12px; }
+
+  .report-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .report-field {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(0,212,170,0.1);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+
+  .report-field-label {
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--text-3);
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+
+  .report-field-value {
+    font-size: 13px;
+    font-family: var(--mono);
+    font-weight: 500;
+    color: var(--text-1);
+  }
+
+  /* ── SCAN HISTORY / ANOMALY TIMELINE ── */
+  .scan-history-panel {
+    background: var(--navy-soft);
+    border: 1px solid var(--navy-border);
+    border-radius: 20px;
+    overflow: hidden;
+    margin-top: 0;
+  }
+
+  .history-list { padding: 0 24px 20px; }
+
+  .history-item {
+    display: flex;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    align-items: flex-start;
+  }
+
+  .history-item:last-child { border-bottom: none; }
+
+  .history-dot-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    width: 20px;
+  }
+
+  .history-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 2px solid;
+  }
+
+  .history-dot.normal { border-color: var(--teal); background: rgba(0,212,170,0.2); }
+  .history-dot.anomaly { border-color: #ef4444; background: rgba(239,68,68,0.25); }
+  .history-dot.warning { border-color: #f59e0b; background: rgba(245,158,11,0.2); }
+
+  .history-line {
+    width: 1px;
+    flex: 1;
+    background: rgba(255,255,255,0.06);
+    margin-top: 4px;
+    min-height: 30px;
+  }
+
+  .history-content { flex: 1; padding-top: 0; }
+
+  .history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 4px;
+  }
+
+  .history-city {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-1);
+  }
+
+  .history-time {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text-3);
+  }
+
+  .history-coords {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text-3);
+    margin-bottom: 4px;
+  }
+
+  .anomaly-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-family: var(--mono);
+    font-weight: 500;
+  }
+
+  .anomaly-tag.geo { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
+  .anomaly-tag.velocity { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.25); }
+  .anomaly-tag.ok { background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.2); }
+  .anomaly-tag svg { width: 10px; height: 10px; }
+
+  /* ── VELOCITY METER ── */
+  .velocity-card {
+    background: rgba(245,158,11,0.06);
+    border: 1px solid rgba(245,158,11,0.2);
+    border-radius: 14px;
+    padding: 16px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .velocity-circle {
+    width: 60px;
+    height: 60px;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .velocity-circle svg { width: 60px; height: 60px; }
+
+  .velocity-label {
+    flex: 1;
+  }
+
+  .velocity-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--amber);
+    margin-bottom: 3px;
+  }
+
+  .velocity-desc {
+    font-size: 12px;
+    color: var(--text-2);
+    line-height: 1.5;
+  }
+
+  /* ── STATS ROW ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--navy-border);
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+  }
+
+  .stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--teal);
+    font-family: var(--mono);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-3);
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── SPINNER ── */
+  .spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(10,15,30,0.3);
+    border-top-color: var(--navy);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── FADE IN ── */
+  .fade-in {
+    animation: fadeIn 0.4s cubic-bezier(0.16,1,0.3,1) forwards;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── RECOMMENDATION ── */
+  .recommendation {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--navy-border);
+    background: rgba(255,255,255,0.02);
+    font-size: 13px;
+    color: var(--text-2);
+    line-height: 1.6;
+  }
+
+  .recommendation svg { width: 18px; height: 18px; color: var(--text-3); flex-shrink: 0; margin-top: 1px; }
+
+  /* ── FOOTER ── */
+  .footer {
+    margin-top: 60px;
+    border-top: 1px solid var(--navy-border);
+    padding-top: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--text-3);
+  }
+
+  .footer-right { display: flex; gap: 16px; }
+
+  /* ── ERROR MSG ── */
+  .err-msg {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.25);
+    color: #ef4444;
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+
+  .err-msg svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--teal)">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="M9 12l2 2 4-4"/>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <h1>MediVerify</h1>
+        <p>Medicine Authentication System v2.0</p>
+      </div>
+    </div>
+    <div class="header-status">
+      <div class="status-dot"></div>
+      System Active — Registry Online
+    </div>
+  </header>
+
+  <!-- STATS ROW -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-value" id="stat-total">0</div>
+      <div class="stat-label">Scans Today</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-flagged" style="color:#ef4444">0</div>
+      <div class="stat-label">Flagged</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-anomalies" style="color:var(--amber)">0</div>
+      <div class="stat-label">Anomalies</div>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+
+    <!-- LEFT: INPUT PANEL -->
+    <div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-header-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          </div>
+          <div>
+            <h2>Verify Medicine</h2>
+            <p>Enter serial or scan QR code</p>
+          </div>
+        </div>
+        <div class="panel-body">
+
+          <!-- GPS BAR -->
+          <div class="gps-bar loading" id="gps-bar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 1 7 7c0 5.25-7 13-7 13S5 14.25 5 9a7 7 0 0 1 7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+            <span id="gps-text">Acquiring GPS location…</span>
+          </div>
+
+          <!-- TABS -->
+          <div class="tabs">
+            <button class="tab-btn active" id="tab-manual" onclick="switchTab('manual')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              Manual Entry
+            </button>
+            <button class="tab-btn" id="tab-qr" onclick="switchTab('qr')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg>
+              Scan QR
+            </button>
+          </div>
+
+          <!-- MANUAL TAB -->
+          <div id="manual-tab">
+            <div class="input-wrap">
+              <div class="input-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><path d="M2 10h20"/></svg>
+              </div>
+              <input class="field" id="serial-input" type="text" placeholder="e.g. ABC123, COLD-DRIF-001, ANTB-999" autocomplete="off" />
+            </div>
+            <div class="input-wrap">
+              <div class="input-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 1 7 7c0 5.25-7 13-7 13S5 14.25 5 9a7 7 0 0 1 7-7z"/></svg>
+              </div>
+              <input class="field" id="location-input" type="text" placeholder="Location name (optional)" />
+            </div>
+            <button class="verify-btn" id="verify-btn" onclick="handleVerify()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+              Verify Medicine
+            </button>
+
+            <div class="samples-label">Try a sample serial</div>
+            <div class="samples">
+              <button class="sample-pill" onclick="trySample('ABC123')">ABC123</button>
+              <button class="sample-pill" onclick="trySample('COLD-DRIF-001')">COLD-DRIF-001</button>
+              <button class="sample-pill" onclick="trySample('ANTB-999')">ANTB-999</button>
+              <button class="sample-pill" onclick="trySample('FAKE-XYZ-404')">FAKE-XYZ-404</button>
+              <button class="sample-pill" onclick="trySample('CLONE-001')">CLONE-001</button>
+            </div>
+          </div>
+
+          <!-- QR TAB -->
+          <div id="qr-tab" class="hidden">
+            <div class="qr-area" id="qr-area">
+              <div id="qr-reader"></div>
+              <div class="qr-placeholder" id="qr-placeholder">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg>
+                <p>Camera preview appears here</p>
+              </div>
+            </div>
+            <div id="qr-error" class="err-msg hidden">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+              <span id="qr-error-text"></span>
+            </div>
+            <button class="qr-btn" id="qr-start-btn" onclick="startScanner()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              Start Camera
+            </button>
+            <p style="font-size:12px;color:var(--text-3);text-align:center;font-family:var(--mono)">Point at medicine QR code — serial extracted automatically</p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: RESULT PANEL -->
+    <div>
+      <div class="panel result-panel" id="result-container">
+        <div class="panel-header">
+          <div class="panel-header-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          </div>
+          <div>
+            <h2>Verification Result</h2>
+            <p>AI risk assessment output</p>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="empty-state" id="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <h3>No scan yet</h3>
+            <p>Enter a serial number or scan a QR code to run an AI-powered risk assessment.</p>
+          </div>
+          <div id="result-content" class="hidden"></div>
+        </div>
+      </div>
+
+      <!-- SCAN HISTORY / ANOMALY TIMELINE -->
+      <div class="scan-history-panel" id="history-panel" style="margin-top:16px;display:none">
+        <div class="panel-header">
+          <div class="panel-header-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div>
+            <h2>Scan Anomaly Timeline</h2>
+            <p>Geographic & velocity analysis for this serial</p>
+          </div>
+        </div>
+        <div class="history-list" id="history-list"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <span>MediVerify v2.0 — AI-Powered Medicine Authentication</span>
+    <div class="footer-right">
+      <span>Built for DCGI Compliance</span>
+      <span>© 2026</span>
+    </div>
+  </footer>
+
+</div>
+
+<!-- html5-qrcode -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  BACKEND SIMULATION — Medicine Registry + Risk Engine
+// ══════════════════════════════════════════════════════
+
+const MEDICINE_DB = {
+  'ABC123': {
+    productName: 'Paracetamol 500mg',
+    manufacturer: 'Sun Pharma Ltd.',
+    batchNo: 'SP-2024-03-A',
+    expiry: 'March 2026',
+    expiryDate: new Date('2026-03-31'),
+    flagged: false,
+    registered: true,
+  },
+  'COLD-DRIF-001': {
+    productName: 'Coldrif Cough Syrup',
+    manufacturer: 'Sresan Pharmaceuticals',
+    batchNo: 'SR-13',
+    expiry: 'Oct 2025',
+    expiryDate: new Date('2025-10-01'),
+    flagged: true,
+    registered: true,
+    flagReason: 'DCGI Alert: Batch SR-13 implicated in DEG contamination — Rajasthan/MP 2025. DO NOT DISPENSE.',
+  },
+  'ANTB-999': {
+    productName: 'Amoxicillin 250mg',
+    manufacturer: 'Cipla Ltd.',
+    batchNo: 'CIP-AMX-2025-Q1',
+    expiry: 'January 2027',
+    expiryDate: new Date('2027-01-31'),
+    flagged: false,
+    registered: true,
+  },
+  'CLONE-001': {
+    productName: 'Azithromycin 500mg',
+    manufacturer: 'Unknown / Suspected Clone',
+    batchNo: 'AZ-FAKE-99',
+    expiry: 'Dec 2025',
+    expiryDate: new Date('2025-12-01'),
+    flagged: true,
+    registered: true,
+    flagReason: 'INTERPOL Alert: Serial cloned from legitimate batch. Multiple scan origins detected.',
+  },
+};
+
+// Simulated past scan history per serial (timestamp, lat, lng, city)
+const SCAN_HISTORY_DB = {
+  'ABC123': [
+    { ts: Date.now() - 86400000 * 3, lat: 12.9716, lng: 77.5946, city: 'Bengaluru', anomaly: null },
+    { ts: Date.now() - 86400000 * 1.5, lat: 12.9720, lng: 77.5950, city: 'Bengaluru', anomaly: null },
+  ],
+  'COLD-DRIF-001': [
+    { ts: Date.now() - 86400000 * 7, lat: 26.9124, lng: 75.7873, city: 'Jaipur (Rajasthan)', anomaly: null },
+    { ts: Date.now() - 86400000 * 4, lat: 22.0716, lng: 79.0520, city: 'Chhindwara (MP)', anomaly: 'geo' },
+    { ts: Date.now() - 86400000 * 2, lat: 27.0238, lng: 74.2179, city: 'Sikar (Rajasthan)', anomaly: 'geo' },
+    { ts: Date.now() - 3600000 * 5, lat: 25.6862, lng: 85.1566, city: 'Patna (Bihar)', anomaly: 'velocity' },
+  ],
+  'ANTB-999': [
+    { ts: Date.now() - 86400000 * 10, lat: 19.0760, lng: 72.8777, city: 'Mumbai', anomaly: null },
+  ],
+  'CLONE-001': [
+    { ts: Date.now() - 3600000 * 2, lat: 28.6139, lng: 77.2090, city: 'New Delhi', anomaly: null },
+    { ts: Date.now() - 3600000 * 1, lat: 13.0827, lng: 80.2707, city: 'Chennai', anomaly: 'velocity' },
+    { ts: Date.now() - 1800000, lat: 22.5726, lng: 88.3639, city: 'Kolkata', anomaly: 'velocity' },
+    { ts: Date.now() - 900000, lat: 17.3850, lng: 78.4867, city: 'Hyderabad', anomaly: 'velocity' },
+  ],
+};
+
+// Report ID counter
+let reportCounter = 1000;
+
+// Session stats
+let sessionTotal = 0, sessionFlagged = 0, sessionAnomalies = 0;
+
+// ── RISK ENGINE ──────────────────────────────────────
+function analyzeRisk(serial, medicine, gpsData, locationName) {
+  const history = SCAN_HISTORY_DB[serial] || [];
+  const now = Date.now();
+  const totalScans = history.length + 1; // +1 for current
+
+  let score = 0;
+  const factors = [];
+
+  // 1. NOT IN REGISTRY
+  if (!medicine) {
+    return {
+      found: false,
+      riskLevel: 'NOT_FOUND',
+      riskScore: 100,
+      riskFactors: [
+        'Serial number not found in verified medicines registry',
+        'Medicine may be counterfeit — do not consume',
+        'Report to your nearest pharmacy regulator immediately',
+      ],
+      recommendation: 'Do NOT consume this medicine. Serial not recognized. Contact DCGI helpline: 1800-180-3024.',
+      shouldReport: true,
+    };
+  }
+
+  // 2. FLAGGED BATCH
+  if (medicine.flagged) {
+    score += 60;
+    factors.push(`DCGI Alert: ${medicine.flagReason || 'Batch flagged by drug regulator'}`);
+  }
+
+  // 3. EXPIRED
+  if (medicine.expiryDate < new Date()) {
+    score += 30;
+    factors.push(`Medicine expired (${medicine.expiry}) — consumption is dangerous`);
+  }
+
+  // 4. HIGH SCAN COUNT — velocity detection
+  if (totalScans > 8) {
+    score += 30;
+    factors.push(`Extremely high scan count (${totalScans}×) — possible counterfeit clone in circulation`);
+    sessionAnomalies++;
+  } else if (totalScans > 4) {
+    score += 15;
+    factors.push(`Elevated scan count (${totalScans}×) — more than expected for single unit`);
+  } else if (totalScans > 1) {
+    factors.push(`Previously scanned ${totalScans - 1} time(s) — within normal range`);
+  }
+
+  // 5. GEO ANOMALY — impossible travel detection
+  if (gpsData && history.length > 0) {
+    const lastScan = history[history.length - 1];
+    const timeDeltaHours = (now - lastScan.ts) / 3600000;
+    const distKm = haversine(lastScan.lat, lastScan.lng, gpsData.latitude, gpsData.longitude);
+    const speedKmh = distKm / timeDeltaHours;
+
+    if (distKm > 200 && timeDeltaHours < 2) {
+      score += 35;
+      factors.push(`Geographic anomaly: Scanned ${Math.round(distKm)}km from previous scan (${lastScan.city}) in only ${timeDeltaHours.toFixed(1)}h — physically impossible for a single pack`);
+      sessionAnomalies++;
+    } else if (distKm > 500 && timeDeltaHours < 12) {
+      score += 20;
+      factors.push(`Cross-region scan: ${Math.round(distKm)}km from last scan location (${lastScan.city}) — unusual distribution pattern`);
+    }
+  }
+
+  // 6. MULTIPLE ANOMALIES IN HISTORY
+  const anomalyCount = history.filter(h => h.anomaly).length;
+  if (anomalyCount >= 2) {
+    score += 20;
+    factors.push(`${anomalyCount} prior geo/velocity anomalies detected in scan history`);
+  }
+
+  // 7. IF NO BAD FACTORS
+  if (factors.length === 0 || (factors.length === 1 && factors[0].includes('Previously scanned'))) {
+    factors.push('Registered manufacturer with valid license');
+    factors.push('Batch number matches registry records');
+    if (medicine.expiryDate > new Date()) {
+      factors.push(`Valid until ${medicine.expiry} — within shelf life`);
+    }
+  }
+
+  score = Math.min(100, score);
+
+  let riskLevel;
+  if (score <= 30) riskLevel = 'LOW';
+  else if (score <= 65) riskLevel = 'MEDIUM';
+  else riskLevel = 'HIGH';
+
+  const shouldReport = (riskLevel === 'HIGH' && medicine.flagged) || riskLevel === 'NOT_FOUND';
+
+  return {
+    found: true,
+    riskLevel,
+    riskScore: score,
+    riskFactors: factors,
+    recommendation: getRec(riskLevel, medicine),
+    shouldReport,
+    scanCount: totalScans,
+  };
+}
+
+function getRec(level, med) {
+  if (level === 'LOW') return `Medicine appears authentic. Verify packaging seals match batch ${med.batchNo} before dispensing.`;
+  if (level === 'MEDIUM') return 'Exercise caution. Cross-check packaging holograms and batch number with distributor records before dispensing.';
+  return 'Do NOT dispense or consume this medicine. Secure the batch and report to DCGI immediately. Contact helpline: 1800-180-3024.';
+}
+
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function generateReportId() {
+  return `RPT-DCGI-${new Date().getFullYear()}-${String(++reportCounter).padStart(4,'0')}`;
+}
+
+// ══════════════════════════════════════════════════════
+//  FRONTEND STATE
+// ══════════════════════════════════════════════════════
+
+let gpsData = null;
+let scannerInstance = null;
+let activeTab = 'manual';
+
+// GPS
+function initGps() {
+  const bar = document.getElementById('gps-bar');
+  const txt = document.getElementById('gps-text');
+  if (!navigator.geolocation) {
+    bar.className = 'gps-bar error';
+    txt.textContent = 'Geolocation not supported — GPS unavailable';
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(pos => {
+    gpsData = { latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy };
+    bar.className = 'gps-bar active';
+    txt.textContent = `GPS active — ${fmtCoords(gpsData.latitude, gpsData.longitude)} (±${Math.round(gpsData.accuracy)}m)`;
+  }, () => {
+    // Simulate Hyderabad coords for demo
+    gpsData = { latitude: 17.3850, longitude: 78.4867, accuracy: 15 };
+    bar.className = 'gps-bar active';
+    txt.textContent = `GPS active — ${fmtCoords(gpsData.latitude, gpsData.longitude)} (±15m) [demo]`;
+  }, { enableHighAccuracy: true, timeout: 8000 });
+}
+
+function fmtCoords(lat, lng) {
+  const ns = lat >= 0 ? 'N' : 'S', ew = lng >= 0 ? 'E' : 'W';
+  return `${Math.abs(lat).toFixed(4)}°${ns}, ${Math.abs(lng).toFixed(4)}°${ew}`;
+}
+
+function fmtTime(ts) {
+  return new Date(ts).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+function timeDiff(ts) {
+  const diff = Date.now() - ts;
+  if (diff < 3600000) return `${Math.round(diff/60000)}m ago`;
+  if (diff < 86400000) return `${Math.round(diff/3600000)}h ago`;
+  return `${Math.round(diff/86400000)}d ago`;
+}
+
+// Tab switch
+function switchTab(tab) {
+  activeTab = tab;
+  document.getElementById('tab-manual').className = 'tab-btn' + (tab === 'manual' ? ' active' : '');
+  document.getElementById('tab-qr').className = 'tab-btn' + (tab === 'qr' ? ' active' : '');
+  document.getElementById('manual-tab').classList.toggle('hidden', tab !== 'manual');
+  document.getElementById('qr-tab').classList.toggle('hidden', tab !== 'qr');
+  if (tab !== 'qr') stopScanner();
+}
+
+// Sample
+function trySample(s) {
+  document.getElementById('serial-input').value = s;
+  handleVerify();
+}
+
+// Main verify
+function handleVerify() {
+  const serial = document.getElementById('serial-input').value.trim().toUpperCase();
+  if (!serial) return;
+  const locationName = document.getElementById('location-input').value.trim();
+  runVerification(serial, locationName);
+}
+
+function runVerification(serial, locationName) {
+  const btn = document.getElementById('verify-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Analyzing…';
+
+  setTimeout(() => {
+    const medicine = MEDICINE_DB[serial] || null;
+    const risk = analyzeRisk(serial, medicine, gpsData, locationName);
+
+    // Update scan history
+    if (!SCAN_HISTORY_DB[serial]) SCAN_HISTORY_DB[serial] = [];
+    SCAN_HISTORY_DB[serial].push({
+      ts: Date.now(),
+      lat: gpsData?.latitude ?? 17.3850,
+      lng: gpsData?.longitude ?? 78.4867,
+      city: locationName || 'Current Location',
+      anomaly: null,
+    });
+
+    // Stats
+    sessionTotal++;
+    if (risk.riskLevel === 'HIGH' || risk.riskLevel === 'NOT_FOUND') sessionFlagged++;
+    updateStats();
+
+    // Generate report if needed
+    let reportId = null, reportedAt = null;
+    if (risk.shouldReport) {
+      reportId = generateReportId();
+      reportedAt = new Date().toISOString();
+    }
+
+    renderResult(serial, medicine, risk, gpsData, locationName, reportId, reportedAt);
+    renderHistory(serial);
+
+    btn.disabled = false;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg> Verify Medicine`;
+  }, 1100);
+}
+
+function updateStats() {
+  document.getElementById('stat-total').textContent = sessionTotal;
+  document.getElementById('stat-flagged').textContent = sessionFlagged;
+  document.getElementById('stat-anomalies').textContent = sessionAnomalies;
+}
+
+// ── RENDER RESULT ────────────────────────────────────
+function renderResult(serial, medicine, risk, gps, locationName, reportId, reportedAt) {
+  document.getElementById('empty-state').classList.add('hidden');
+  const el = document.getElementById('result-content');
+  el.classList.remove('hidden');
+
+  const lvl = risk.riskLevel;
+  const scanCount = risk.scanCount ?? 1;
+  const history = SCAN_HISTORY_DB[serial] || [];
+
+  // Velocity anomaly check for meter
+  const velocityScans = history.filter(h => h.anomaly === 'velocity').length;
+  const geoScans = history.filter(h => h.anomaly === 'geo').length;
+
+  let html = `<div class="fade-in">`;
+
+  // ── RISK HEADER ──
+  html += `
+  <div class="risk-header ${lvl}" style="margin-bottom:14px">
+    <div class="risk-top">
+      <div>
+        <div class="risk-label ${lvl}" style="margin-bottom:10px">
+          ${lvl === 'LOW' ? svgCheck() : lvl === 'MEDIUM' ? svgWarn() : svgX()}
+          ${lvl === 'NOT_FOUND' ? 'UNREGISTERED' : lvl + ' RISK'}
+        </div>
+        <div class="risk-name">${medicine ? medicine.productName : 'Unknown Medicine'}</div>
+        <div class="risk-serial">SERIAL: ${serial}</div>
+      </div>
+      ${riskRingSVG(risk.riskScore, lvl)}
+    </div>
+    <div class="risk-meter">
+      <div class="risk-meter-labels"><span>LOW (0–30)</span><span>MEDIUM (31–65)</span><span>HIGH (66+)</span></div>
+      <div class="risk-bar-bg"><div class="risk-bar-fill ${lvl}" style="width:${risk.riskScore}%"></div></div>
+    </div>
+  </div>`;
+
+  // ── DETAILS ──
+  if (medicine) {
+    html += `<div class="detail-grid" style="margin-bottom:14px">
+      <div class="detail-item">
+        <div class="detail-label">${svgPkg()}Manufacturer</div>
+        <div class="detail-value" style="font-size:13px">${medicine.manufacturer}</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">${svgBarcode()}Batch No</div>
+        <div class="detail-value" style="font-family:var(--mono);font-size:13px">${medicine.batchNo}</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">${svgCal()}Expiry</div>
+        <div class="detail-value" style="font-size:13px;${medicine.expiryDate < new Date() ? 'color:#ef4444' : ''}">${medicine.expiry}</div>
+      </div>
+      <div class="detail-item ${scanCount > 5 ? 'highlight' : ''}">
+        <div class="detail-label">${svgActivity()}Scan Count</div>
+        <div class="detail-value" style="font-family:var(--mono)">${scanCount}×${scanCount > 5 ? ' ⚠' : ''}</div>
+      </div>
+    </div>`;
+  }
+
+  // ── VELOCITY CARD (if anomalies) ──
+  if (velocityScans > 0 || geoScans > 0) {
+    html += `
+    <div class="velocity-card" style="margin-bottom:14px">
+      <div class="velocity-circle">
+        ${velocityCircleSVG(velocityScans + geoScans)}
+      </div>
+      <div class="velocity-label">
+        <div class="velocity-title">⚠ Geo / Velocity Anomalies Detected</div>
+        <div class="velocity-desc">${geoScans} geographic anomaly${geoScans !== 1 ? 'ies' : ''} and ${velocityScans} velocity spike${velocityScans !== 1 ? 's' : ''} in scan history. This serial has been scanned from physically impossible locations in short time windows — consistent with a cloned serial circulating across multiple units.</div>
+      </div>
+    </div>`;
+  }
+
+  // ── RISK FACTORS ──
+  html += `<div class="risk-factors ${lvl}" style="margin-bottom:14px">
+    <div class="risk-factors-title">${lvl === 'LOW' ? svgCheck() : svgWarn()} Risk Assessment Breakdown</div>
+    ${risk.riskFactors.map(f => `<div class="factor-item"><span class="factor-dot"></span><span>${f}</span></div>`).join('')}
+  </div>`;
+
+  // ── SCAN META ──
+  if (gps || locationName) {
+    html += `<div class="scan-meta" style="margin-bottom:14px">
+      <div class="meta-chip">
+        ${svgClock()}
+        <div class="meta-chip-inner"><span class="meta-chip-label">Scan Time</span><span class="meta-chip-value">${fmtTime(Date.now())}</span></div>
+      </div>
+      <div class="meta-chip">
+        ${svgNav()}
+        <div class="meta-chip-inner"><span class="meta-chip-label">GPS Location</span><span class="meta-chip-value">${gps ? fmtCoords(gps.latitude, gps.longitude) : locationName || '—'}</span></div>
+      </div>
+    </div>`;
+  }
+
+  // ── RECOMMENDATION ──
+  html += `<div class="recommendation" style="margin-bottom:14px">
+    ${svgShield()}
+    <span>${risk.recommendation}</span>
+  </div>`;
+
+  // ── AUTO-REPORT ──
+  if (reportId) {
+    html += `
+    <div class="report-card fade-in">
+      <div class="report-top-bar"></div>
+      <div class="report-body">
+        <div class="report-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </div>
+        <div style="flex:1">
+          <div class="report-title">
+            Incident Report Auto-Generated
+            <span class="sent-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:10px;height:10px"><polyline points="20 6 9 17 4 12"/></svg>
+              Generated
+            </span>
+          </div>
+          <div class="report-desc">An incident report has been generated and logged. Submit to DCGI via portal: <strong style="color:var(--teal)">cdsco.gov.in/adverse-event-reporting</strong></div>
+          <div class="report-fields">
+            <div class="report-field"><div class="report-field-label">Report ID</div><div class="report-field-value">${reportId}</div></div>
+            <div class="report-field"><div class="report-field-label">Generated At</div><div class="report-field-value">${new Date(reportedAt).toLocaleTimeString()}</div></div>
+            <div class="report-field"><div class="report-field-label">Submit To</div><div class="report-field-value">DCGI / CDSCO</div></div>
+            <div class="report-field"><div class="report-field-label">GPS Logged</div><div class="report-field-value">${gps ? fmtCoords(gps.latitude, gps.longitude) : 'N/A'}</div></div>
+          </div>
+          <p style="font-size:11px;color:rgba(0,212,170,0.5);margin-top:10px;font-family:var(--mono)">Keep this Report ID for reference. Download as PDF for official submission.</p>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+// ── RENDER HISTORY TIMELINE ───────────────────────────
+function renderHistory(serial) {
+  const history = SCAN_HISTORY_DB[serial] || [];
+  const panel = document.getElementById('history-panel');
+  const list = document.getElementById('history-list');
+
+  if (history.length <= 1) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+
+  let html = '';
+  const sorted = [...history].sort((a, b) => b.ts - a.ts);
+
+  sorted.forEach((scan, i) => {
+    const isLast = i === sorted.length - 1;
+    const dotClass = scan.anomaly === 'geo' ? 'anomaly' : scan.anomaly === 'velocity' ? 'warning' : 'normal';
+    const isCurrent = i === 0;
+
+    html += `
+    <div class="history-item">
+      <div class="history-dot-wrap">
+        <div class="history-dot ${dotClass}"></div>
+        ${!isLast ? '<div class="history-line"></div>' : ''}
+      </div>
+      <div class="history-content">
+        <div class="history-header">
+          <div class="history-city">${scan.city}${isCurrent ? ' <span style="font-size:11px;color:var(--teal);font-family:var(--mono)">(current)</span>' : ''}</div>
+          <div class="history-time">${timeDiff(scan.ts)}</div>
+        </div>
+        <div class="history-coords">${fmtCoords(scan.lat, scan.lng)} · ${fmtTime(scan.ts)}</div>
+        <div>
+          ${scan.anomaly === 'geo' ? `<span class="anomaly-tag geo">${svgWarn()} Geographic anomaly — impossible travel distance</span>` : ''}
+          ${scan.anomaly === 'velocity' ? `<span class="anomaly-tag velocity">${svgWarn()} Velocity spike — multiple cities in minutes</span>` : ''}
+          ${!scan.anomaly ? `<span class="anomaly-tag ok">${svgCheck()} Normal scan</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  });
+
+  list.innerHTML = html;
+}
+
+// ── SVG HELPERS ───────────────────────────────────────
+function riskRingSVG(score, level) {
+  const colors = { LOW: '#10b981', MEDIUM: '#f59e0b', HIGH: '#ef4444', NOT_FOUND: '#ef4444' };
+  const c = colors[level];
+  const r = 28, circ = 2 * Math.PI * r;
+  const dash = (score / 100) * circ;
+  return `<svg class="risk-score-ring" viewBox="0 0 72 72">
+    <circle cx="36" cy="36" r="${r}" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="5"/>
+    <circle cx="36" cy="36" r="${r}" fill="none" stroke="${c}" stroke-width="5"
+      stroke-dasharray="${dash} ${circ}" stroke-dashoffset="${circ * 0.25}"
+      stroke-linecap="round" style="transition:stroke-dasharray 0.8s cubic-bezier(0.16,1,0.3,1)"/>
+    <text x="36" y="40" text-anchor="middle" fill="${c}" font-size="14" font-weight="700" font-family="DM Mono,monospace">${score}</text>
+  </svg>`;
+}
+
+function velocityCircleSVG(count) {
+  return `<svg viewBox="0 0 60 60">
+    <circle cx="30" cy="30" r="24" fill="rgba(245,158,11,0.1)" stroke="rgba(245,158,11,0.3)" stroke-width="1.5"/>
+    <text x="30" y="35" text-anchor="middle" fill="#f59e0b" font-size="18" font-weight="700" font-family="DM Mono,monospace">${count}</text>
+  </svg>`;
+}
+
+function svgCheck() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:12px;height:12px;flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>`; }
+function svgWarn() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;flex-shrink:0"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>`; }
+function svgX() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:12px;height:12px;flex-shrink:0"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>`; }
+function svgPkg() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`; }
+function svgBarcode() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px"><path d="M3 5v14"/><path d="M8 5v14"/><path d="M12 5v14"/><path d="M17 5v14"/><path d="M21 5v14"/></svg>`; }
+function svgCal() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`; }
+function svgActivity() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`; }
+function svgClock() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`; }
+function svgNav() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M12 2a7 7 0 0 1 7 7c0 5.25-7 13-7 13S5 14.25 5 9a7 7 0 0 1 7-7z"/></svg>`; }
+function svgShield() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`; }
+
+// ── QR SCANNER ────────────────────────────────────────
+function startScanner() {
+  const errEl = document.getElementById('qr-error');
+  const errTxt = document.getElementById('qr-error-text');
+  errEl.classList.add('hidden');
+
+  if (typeof Html5Qrcode === 'undefined') {
+    errEl.classList.remove('hidden');
+    errTxt.textContent = 'QR library not loaded. Check internet connection.';
+    return;
+  }
+
+  document.getElementById('qr-placeholder').style.display = 'none';
+  const scanner = new Html5Qrcode('qr-reader');
+  scannerInstance = scanner;
+
+  scanner.start(
+    { facingMode: 'environment' },
+    { fps: 10, qrbox: { width: 200, height: 200 } },
+    (decoded) => {
+      stopScanner();
+      document.getElementById('serial-input').value = decoded;
+      switchTab('manual');
+      runVerification(decoded.trim().toUpperCase(), '');
+    },
+    () => {}
+  ).catch(err => {
+    errEl.classList.remove('hidden');
+    errTxt.textContent = 'Camera access denied. Please allow camera permissions and retry.';
+    document.getElementById('qr-placeholder').style.display = '';
+  });
+
+  document.getElementById('qr-start-btn').textContent = 'Stop Camera';
+  document.getElementById('qr-start-btn').onclick = stopScanner;
+}
+
+function stopScanner() {
+  if (scannerInstance) {
+    scannerInstance.stop().catch(() => {});
+    scannerInstance = null;
+  }
+  document.getElementById('qr-placeholder').style.display = '';
+  const btn = document.getElementById('qr-start-btn');
+  if (btn) {
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Start Camera`;
+    btn.onclick = startScanner;
+  }
+}
+
+// Enter key
+document.addEventListener('DOMContentLoaded', () => {
+  initGps();
+  document.getElementById('serial-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleVerify();
+  });
+});
+</script>
+</body>
+</html>
